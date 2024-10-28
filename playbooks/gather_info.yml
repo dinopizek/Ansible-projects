@@ -1,0 +1,13 @@
+---
+- name: Gather and display all Windows facts
+  hosts: windows
+  gather_facts: no
+  tasks:
+
+    - name: Gather Windows facts
+      ansible.windows.setup:
+      register: win_facts
+
+    - name: Display all gathered facts
+      debug:
+        var: win_facts

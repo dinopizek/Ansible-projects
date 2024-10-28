@@ -1,0 +1,27 @@
+---
+- name: Install specific Windows updates by KB numbers
+  hosts: windows
+  gather_facts: yes
+  tasks:
+
+    - name: Install particular Security Updates based on KB numbers
+      ansible.windows.win_updates:
+        category_names:
+          - SecurityUpdates
+        accept_list:
+          - KB5044281
+      register: update_install_result
+
+    - name: Display updates that were installed
+      debug:
+        var: update_install_result.updates  # Adjust this key based on the actual output
+
+    - name: Check if updates were installed and display message
+      ansible.builtin.debug:
+        msg: "Updates were installed successfully."
+      when: update_install_result.updates | length > 0  # Use the correct key here
+
+    - name: Log if no updates were installed
+      ansible.builtin.debug:
+        msg: "No updates were installed."
+      when: update_install_result.updates | length == 0  # Use the correct key here

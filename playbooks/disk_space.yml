@@ -1,0 +1,14 @@
+---
+- name: Gather disk space information on Windows using PowerShell
+  hosts: windows
+  gather_facts: no
+  tasks:
+
+    - name: Get disk information using PowerShell
+      ansible.windows.win_shell: |
+        Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name="FreeSpace";Expression={[math]::round($_.Free/1GB,2)}}, @{Name="UsedSpace";Expression={[math]::round(($_.Used/1GB),2)}}, @{Name="TotalSpace";Expression={[math]::round($_.Used/1GB,2) + [math]::round($_.Free/1GB,2)}}
+      register: disk_info
+
+    - name: Display disk information
+      debug:
+        var: disk_info.stdout_lines

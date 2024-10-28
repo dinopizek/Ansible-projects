@@ -1,0 +1,29 @@
+---
+- name: Search for and log Windows updates (Security, Critical, and Rollups)
+  hosts: windows
+  gather_facts: yes
+  tasks:
+
+    - name: Search for Security, Critical, and Update Rollup updates, log to C:\available_updates.txt
+      ansible.windows.win_updates:
+        category_names:
+          - SecurityUpdates
+          - CriticalUpdates
+          - UpdateRollups
+        state: searched
+        log_path: C:\available_updates.txt
+      register: update_result
+
+    - name: Display the update search result
+      debug:
+        var: update_result.updates
+
+    - name: Check if updates were found and display message
+      ansible.builtin.debug:
+        msg: "Updates were found and logged to C:\\available_updates.txt"
+      when: update_result.updates | length > 0
+
+    - name: Log when no updates are found
+      ansible.builtin.debug:
+        msg: "No updates found."
+      when: update_result.updates | length == 0
