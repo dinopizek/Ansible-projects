@@ -1,0 +1,65 @@
+---
+- name: Deploy Zabbix folder, update config, and execute commands on Windows servers
+  hosts: all
+  vars:
+    server_ip: "10.51.200.122"  # Replace with your server IP address
+    zabbix_server_ip: "10.51.200.122"  # Replace with your Zabbix server IP address
+  gather_facts: yes
+  tasks:
+
+    - name: Copy contents of Zabbix folder to C:\
+      ansible.windows.win_copy:
+        src: ./Zabbix/  # Trailing slash to copy the contents, not the folder itself
+        dest: C:\Zabbix
+        remote_src: no
+
+    - name: Update Server in the Zabbix configuration file
+      community.windows.win_lineinfile:
+        path: C:\Zabbix\conf\zabbix_agentd.win.conf
+        regexp: '^Server\s*=.*'
+        line: 'Server={{ server_ip }}'
+
+    - name: Show updated Server line
+      ansible.builtin.debug:
+        msg: "Updated Server line to: Server={{ server_ip }}"
+
+    - name: Update ServerActive in the Zabbix configuration file
+      community.windows.win_lineinfile:
+        path: C:\Zabbix\conf\zabbix_agentd.win.conf
+        regexp: '^ServerActive\s*=.*'
+        line: 'ServerActive={{ zabbix_server_ip }}'
+
+    - name: Show updated ServerActive line
+      ansible.builtin.debug:
+        msg: "Updated ServerActive line to: ServerActive={{ zabbix_server_ip }}"
+
+    - name: Update Hostname in the Zabbix configuration file
+      community.windows.win_lineinfile:
+        path: C:\Zabbix\conf\zabbix_agentd.win.conf
+        regexp: '^Hostname\s*=.*'
+        line: 'Hostname={{ ansible_hostname }}'
+
+    - name: Show updated Hostname line
+      ansible.builtin.debug:
+        msg: "Updated Hostname line to: Hostname={{ ansible_hostname }}"
+
+    # Execute each command from the .bat script individually
+    - name: Add firewall rule for Zabbix agent
+      ansible.windows.win_shell: |
+        netsh advfirewall firewall add rule name="Zabbix rule" protocol=TCP dir=in localport=10050-10051 action=allow
+
+    - name: Change directory to Zabbix bin directory
+      ansible.windows.win_shell: |
+        cd C:\Zabbix\bin
+
+    - name: Install Zabbix agent service
+      ansible.windows.win_shell: |
+        C:\Zabbix\bin\zabbix_agentd.exe --config C:\Zabbix\conf\zabbix_agentd.win.conf --install
+
+    - name: Start Zabbix agent service
+      ansible.windows.win_shell: |
+        C:\Zabbix\bin\zabbix_agentd.exe --start
+
+    - name: Set service failure actions for Zabbix Agent
+      ansible.windows.win_shell: |
+        sc.exe failure "Zabbix Agent" reset= 0 actions= restart/60000/restart/60000/""/60000
