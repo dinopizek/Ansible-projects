@@ -60,11 +60,6 @@
         msg: "{{ updated_config.stdout_lines }}"
       when: config_file.stat.exists
 
-    - name: Show error if config file doesn't exist
-      ansible.builtin.debug:
-        msg: "Zabbix configuration file not found at {{ zabbix_conf_path }}"
-      when: not config_file.stat.exists
-
     - name: Start Zabbix agent service
       ansible.windows.win_service:
         name: "{{ zabbix_service_name }}"
