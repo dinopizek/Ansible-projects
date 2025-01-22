@@ -1,0 +1,1 @@
+Unzip Zabbix.zip before running the playbook!
