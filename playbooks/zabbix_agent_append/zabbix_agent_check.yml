@@ -1,11 +1,17 @@
 ---
-- name: Check Zabbix configuration file
+- name: Check Zabbix configuration file and service
   hosts: all
   gather_facts: no
   vars:
     zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf"  # Replace with the actual path
+    zabbix_service_name: "Zabbix Agent"  # Replace with the actual service name if different
 
   tasks:
+    - name: Check Zabbix service status
+      ansible.windows.win_service:
+        name: "{{ zabbix_service_name }}"
+      register: zabbix_service
+
     - name: Check if Zabbix config file exists
       ansible.windows.win_stat:
         path: "{{ zabbix_conf_path }}"
@@ -30,6 +36,8 @@
     - name: Display results
       ansible.builtin.debug:
         msg:
+          - "Zabbix service status: {{ zabbix_service.state }}"
+          - "Zabbix service start mode: {{ zabbix_service.start_mode }}"
           - "Config file exists: {{ config_file.stat.exists }}"
           - "Server line exists: {{ server_line_exists | default(false) }}"
           - "ServerActive line exists: {{ server_active_line_exists | default(false) }}"
