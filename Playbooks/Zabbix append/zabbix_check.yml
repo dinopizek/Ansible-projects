@@ -12,18 +12,19 @@
       register: config_file
 
     - name: Read Zabbix config file content
-      ansible.windows.win_shell: Get-Content "{{ zabbix_conf_path }}"
+      ansible.windows.win_shell: |
+        Get-Content "{{ zabbix_conf_path }}" | ForEach-Object { $_ -replace '^[\s\t]+|[\s\t]+$' } | Where-Object { $_ -ne '' }
       register: config_content
       when: config_file.stat.exists
 
     - name: Check for Server line
       ansible.builtin.set_fact:
-        server_line_exists: "{{ config_content.stdout | regex_search('^Server=') }}"
+        server_line_exists: "{{ config_content.stdout_lines | select('match', '^Server\\s*=') | list | length > 0 }}"
       when: config_file.stat.exists
 
     - name: Check for ServerActive line
       ansible.builtin.set_fact:
-        server_active_line_exists: "{{ config_content.stdout | regex_search('^ServerActive=') }}"
+        server_active_line_exists: "{{ config_content.stdout_lines | select('match', '^ServerActive\\s*=') | list | length > 0 }}"
       when: config_file.stat.exists
 
     - name: Display results
@@ -32,3 +33,5 @@
           - "Config file exists: {{ config_file.stat.exists }}"
           - "Server line exists: {{ server_line_exists | default(false) }}"
           - "ServerActive line exists: {{ server_active_line_exists | default(false) }}"
+          - "File contents:"
+          - "{{ config_content.stdout_lines }}"
