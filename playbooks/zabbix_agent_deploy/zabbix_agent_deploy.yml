@@ -4,61 +4,83 @@
   vars:
     server_ip: "10.51.200.122"  # Replace with your server IP address
     zabbix_server_ip: "10.51.200.122"  # Replace with your Zabbix server IP address
+    zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf"
+    zabbix_bin_path: "C:\\Zabbix\\bin"
+    zabbix_source_folder: "./Zabbix/"
   gather_facts: yes
   tasks:
 
     - name: Copy contents of Zabbix folder to C:\
       ansible.windows.win_copy:
-        src: ./Zabbix/  # Trailing slash to copy the contents, not the folder itself
+        src: "{{ zabbix_source_folder }}"
         dest: C:\Zabbix
         remote_src: no
 
     - name: Update Server in the Zabbix configuration file
       community.windows.win_lineinfile:
-        path: C:\Zabbix\conf\zabbix_agentd.win.conf
+        path: "{{ zabbix_conf_path }}"
         regexp: '^Server\s*=.*'
         line: 'Server={{ server_ip }}'
+      register: server_update
 
     - name: Show updated Server line
+      ansible.windows.win_shell: |
+        Get-Content "{{ zabbix_conf_path }}" | Select-String "^Server="
+      register: updated_server_line
+      when: server_update.changed
+
+    - name: Display updated Server line
       ansible.builtin.debug:
-        msg: "Updated Server line to: Server={{ server_ip }}"
+        msg: "{{ updated_server_line.stdout_lines[0] }}"
+      when: server_update.changed
 
     - name: Update ServerActive in the Zabbix configuration file
       community.windows.win_lineinfile:
-        path: C:\Zabbix\conf\zabbix_agentd.win.conf
+        path: "{{ zabbix_conf_path }}"
         regexp: '^ServerActive\s*=.*'
         line: 'ServerActive={{ zabbix_server_ip }}'
+      register: serveractive_update
 
     - name: Show updated ServerActive line
+      ansible.windows.win_shell: |
+        Get-Content "{{ zabbix_conf_path }}" | Select-String "^ServerActive="
+      register: updated_serveractive_line
+      when: serveractive_update.changed
+
+    - name: Display updated ServerActive line
       ansible.builtin.debug:
-        msg: "Updated ServerActive line to: ServerActive={{ zabbix_server_ip }}"
+        msg: "{{ updated_serveractive_line.stdout_lines[0] }}"
+      when: serveractive_update.changed
 
     - name: Update Hostname in the Zabbix configuration file
       community.windows.win_lineinfile:
-        path: C:\Zabbix\conf\zabbix_agentd.win.conf
+        path: "{{ zabbix_conf_path }}"
         regexp: '^Hostname\s*=.*'
         line: 'Hostname={{ ansible_hostname }}'
+      register: hostname_update
 
     - name: Show updated Hostname line
-      ansible.builtin.debug:
-        msg: "Updated Hostname line to: Hostname={{ ansible_hostname }}"
+      ansible.windows.win_shell: |
+        Get-Content "{{ zabbix_conf_path }}" | Select-String "^Hostname="
+      register: updated_hostname_line
+      when: hostname_update.changed
 
-    # Execute each command from the .bat script individually
+    - name: Display updated Hostname line
+      ansible.builtin.debug:
+        msg: "{{ updated_hostname_line.stdout_lines[0] }}"
+      when: hostname_update.changed
+
     - name: Add firewall rule for Zabbix agent
       ansible.windows.win_shell: |
         netsh advfirewall firewall add rule name="Zabbix rule" protocol=TCP dir=in localport=10050-10051 action=allow
 
-    - name: Change directory to Zabbix bin directory
-      ansible.windows.win_shell: |
-        cd C:\Zabbix\bin
-
     - name: Install Zabbix agent service
       ansible.windows.win_shell: |
-        C:\Zabbix\bin\zabbix_agentd.exe --config C:\Zabbix\conf\zabbix_agentd.win.conf --install
+        {{ zabbix_bin_path }}\zabbix_agentd.exe --config {{ zabbix_conf_path }} --install
 
     - name: Start Zabbix agent service
       ansible.windows.win_shell: |
-        C:\Zabbix\bin\zabbix_agentd.exe --start
+        {{ zabbix_bin_path }}\zabbix_agentd.exe --start
 
     - name: Set service failure actions for Zabbix Agent
       ansible.windows.win_shell: |
