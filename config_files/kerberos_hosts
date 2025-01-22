@@ -1,12 +1,12 @@
 [windows]
-server1 ansible_host=hostname.DOMAIN1.LOCAL
-server2 ansible_host=hostname.DOMAIN2.LOCAL
+server1 ansible_host=hostname1.DOMAIN1.LOCAL
+server2 ansible_host=hostname2.DOMAIN2.LOCAL
 
 [DOMAIN1]
-server1 ansible_host=hostname.DOMAIN1.LOCAL
+server1 ansible_host=hostname1.DOMAIN1.LOCAL
 
 [DOMAIN2]
-server2 ansible_host=hostname.DOMAIN2.LOCAL
+server2 ansible_host=hostname2.DOMAIN2.LOCAL
 
 [DOMAIN1:vars]
 ansible_connection=winrm
