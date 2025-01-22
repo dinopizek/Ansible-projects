@@ -5,8 +5,20 @@
   vars:
     zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf" # Replace with the actual path
     new_server_ip: "10.51.200.123"  # Replace with the new server IP
+    zabbix_service_name: "Zabbix Agent"  # Replace with the actual service name if different
 
   tasks:
+    - name: Stop Zabbix agent service
+      ansible.windows.win_service:
+        name: "{{ zabbix_service_name }}"
+        state: stopped
+
+    - name: Create backup of Zabbix config file
+      ansible.windows.win_copy:
+        src: "{{ zabbix_conf_path }}"
+        dest: "{{ zabbix_conf_path }}.ansible-backup"
+        remote_src: yes
+
     - name: Check if Zabbix config file exists
       ansible.windows.win_stat:
         path: "{{ zabbix_conf_path }}"
@@ -52,3 +64,8 @@
       ansible.builtin.debug:
         msg: "Zabbix configuration file not found at {{ zabbix_conf_path }}"
       when: not config_file.stat.exists
+
+    - name: Start Zabbix agent service
+      ansible.windows.win_service:
+        name: "{{ zabbix_service_name }}"
+        state: started
