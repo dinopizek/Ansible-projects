@@ -25,17 +25,9 @@
     - name: Write update search result to file
       ansible.windows.win_shell: |
         $updates = @'
-        {{ update_result.updates | to_nice_json }}
+        {{ update_result.updates | to_json }}
         '@
-        $content = @"
-        Windows Update Search Results
-        =============================
-
-        $($updates | ConvertFrom-Json | ConvertTo-Json -Depth 5)
-
-        Total updates found: $((ConvertFrom-Json $updates).Count)
-        "@
-        $content | Out-File -FilePath {{ log_file }}
+        $updates | ConvertFrom-Json | ConvertTo-Json -Depth 5 | Out-File -FilePath {{ log_file }}
       when: update_result.updates | length > 0
 
     - name: Display the update search result
