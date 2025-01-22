@@ -4,7 +4,7 @@
   gather_facts: no
   vars:
     zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf" # Replace with the actual path
-    new_server_ip: "10.51.200.123" # Replace with the new server IP
+    new_server_ip: "10.51.200.123"  # Replace with the new server IP
 
   tasks:
     - name: Check if Zabbix config file exists
@@ -28,17 +28,17 @@
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
         regexp: '^Server\s*='
-        line: "Server={{ current_server_line.stdout_lines[0].split('=')[1].strip() }},{{ new_server_ip }}"
+        line: "Server={{ current_server_line.stdout_lines[0].split('=')[1].strip() }}, {{ new_server_ip }}"
         backrefs: yes
-      when: config_file.stat.exists and current_server_line.stdout_lines
+      when: config_file.stat.exists and current_server_line.stdout_lines and new_server_ip not in current_server_line.stdout_lines[0]
 
     - name: Append new IP to ServerActive line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
         regexp: '^ServerActive\s*='
-        line: "ServerActive={{ current_serveractive_line.stdout_lines[0].split('=')[1].strip() }},{{ new_server_ip }}"
+        line: "ServerActive={{ current_serveractive_line.stdout_lines[0].split('=')[1].strip() }}, {{ new_server_ip }}"
         backrefs: yes
-      when: config_file.stat.exists and current_serveractive_line.stdout_lines
+      when: config_file.stat.exists and current_serveractive_line.stdout_lines and new_server_ip not in current_serveractive_line.stdout_lines[0]
 
     - name: Display updated configuration
       ansible.windows.win_shell: Get-Content "{{ zabbix_conf_path }}" | Select-String "^Server=|^ServerActive="
@@ -49,8 +49,3 @@
       ansible.builtin.debug:
         msg: "{{ updated_config.stdout_lines }}"
       when: config_file.stat.exists
-
-    - name: Show error if config file doesn't exist
-      ansible.builtin.debug:
-        msg: "Zabbix configuration file not found at {{ zabbix_conf_path }}"
-      when: not config_file.stat.exists
