@@ -13,7 +13,8 @@
       # - ServicePacks
       # - Tools
       # - Connectors
-    log_file: C:\available_updates.txt
+    log_file: 'C:\available_updates.txt'
+
   tasks:
     - name: Search for specified updates
       ansible.windows.win_updates:
@@ -33,9 +34,11 @@
       debug:
         var: update_result.updates
 
-    - name: Check if updates were found and display message
+    - name: Show summary of updates
       ansible.builtin.debug:
-        msg: "Updates were found and logged to {{ log_file }}"
+        msg: 
+          - "Total updates found: {{ update_result.updates | length }}"
+          - "Updates have been logged to {{ log_file }}"
       when: update_result.updates | length > 0
 
     - name: Log when no updates are found
