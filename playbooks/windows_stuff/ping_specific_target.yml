@@ -1,0 +1,13 @@
+---
+- name: Ping specific hosts
+  hosts: localhost
+  gather_facts: false
+  vars:
+    target_hosts:
+      - 8.8.8.8
+      - 127.0.0.1
+  tasks:
+    - name: Ping each target host
+      ansible.builtin.ping:
+      delegate_to: "{{ item }}"
+      loop: "{{ target_hosts }}"
