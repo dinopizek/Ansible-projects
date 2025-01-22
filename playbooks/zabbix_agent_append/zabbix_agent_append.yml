@@ -1,6 +1,6 @@
 ---
 - name: Append new Zabbix server IP to configuration
-  hosts: all
+  hosts: windows
   gather_facts: no
   vars:
     zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf" # Replace with the actual path

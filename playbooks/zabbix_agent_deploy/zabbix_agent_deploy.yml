@@ -1,6 +1,6 @@
 ---
 - name: Deploy Zabbix folder, update config, and execute commands on Windows servers
-  hosts: all
+  hosts: windows
   vars:
     server_ip: "10.51.200.122"  # Replace with your server IP address
     zabbix_server_ip: "10.51.200.122"  # Replace with your Zabbix server IP address

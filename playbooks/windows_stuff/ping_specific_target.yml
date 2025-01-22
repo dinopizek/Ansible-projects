@@ -1,6 +1,6 @@
 ---
 - name: Ping specific hosts
-  hosts: localhost
+  hosts: windows
   gather_facts: false
   vars:
     target_hosts:
