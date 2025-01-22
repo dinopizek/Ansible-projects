@@ -3,32 +3,52 @@
   hosts: all
   gather_facts: no
   vars:
-    zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf"  # Replace with the actual path
+    zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf" # Replace with the actual path
     new_server_ip: "10.51.200.123"  # Replace with the new server IP
 
   tasks:
+    - name: Check if Zabbix config file exists
+      ansible.windows.win_stat:
+        path: "{{ zabbix_conf_path }}"
+      register: config_file
+
+    - name: Read current Server line
+      ansible.windows.win_shell: |
+        (Get-Content "{{ zabbix_conf_path }}" | Select-String "^Server\s*=").Line -replace '^Server\s*=\s*', ''
+      register: current_server_ips
+      when: config_file.stat.exists
+
+    - name: Read current ServerActive line
+      ansible.windows.win_shell: |
+        (Get-Content "{{ zabbix_conf_path }}" | Select-String "^ServerActive\s*=").Line -replace '^ServerActive\s*=\s*', ''
+      register: current_serveractive_ips
+      when: config_file.stat.exists
+
     - name: Append new IP to Server line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
-        regexp: '^Server='
-        line: "Server={{ item }},{{ new_server_ip }}"
-        backrefs: yes
-      with_items:
-        - "{{ lookup('file', zabbix_conf_path) | regex_search('^Server=(.*)$', '\\1') | first }}"
+        regexp: '^Server\s*='
+        line: "Server={{ current_server_ips.stdout.strip() }},{{ new_server_ip }}"
+      when: config_file.stat.exists and current_server_ips.stdout and new_server_ip not in current_server_ips.stdout
 
     - name: Append new IP to ServerActive line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
-        regexp: '^ServerActive='
-        line: "ServerActive={{ item }},{{ new_server_ip }}"
-        backrefs: yes
-      with_items:
-        - "{{ lookup('file', zabbix_conf_path) | regex_search('^ServerActive=(.*)$', '\\1') | first }}"
+        regexp: '^ServerActive\s*='
+        line: "ServerActive={{ current_serveractive_ips.stdout.strip() }},{{ new_server_ip }}"
+      when: config_file.stat.exists and current_serveractive_ips.stdout and new_server_ip not in current_serveractive_ips.stdout
 
     - name: Display updated configuration
       ansible.windows.win_shell: Get-Content "{{ zabbix_conf_path }}" | Select-String "^Server=|^ServerActive="
       register: updated_config
+      when: config_file.stat.exists
 
     - name: Show updated configuration
       ansible.builtin.debug:
         msg: "{{ updated_config.stdout_lines }}"
+      when: config_file.stat.exists
+
+    - name: Show error if config file doesn't exist
+      ansible.builtin.debug:
+        msg: "Zabbix configuration file not found at {{ zabbix_conf_path }}"
+      when: not config_file.stat.exists
