@@ -41,7 +41,7 @@
         path: "{{ zabbix_conf_path }}"
         regexp: '^Server\s*='
         line: "Server={{ current_server_ips.stdout.strip() }},{{ new_server_ip }}"
-      when: config_file.stat.exists and current_server_ips.stdout and new_server_ip not in current_server_ips.stdout.split(',')
+      when: config_file.stat.exists and current_server_ips.stdout and new_server_ip not in current_server_ips.stdout.split(',') | map('trim') | select('length') | list
       register: server_updated
 
     - name: Append new IP to ServerActive line
@@ -49,7 +49,7 @@
         path: "{{ zabbix_conf_path }}"
         regexp: '^ServerActive\s*='
         line: "ServerActive={{ current_serveractive_ips.stdout.strip() }},{{ new_server_ip }}"
-      when: config_file.stat.exists and current_serveractive_ips.stdout and new_server_ip not in current_serveractive_ips.stdout.split(',')
+      when: config_file.stat.exists and current_serveractive_ips.stdout and new_server_ip not in current_serveractive_ips.stdout.split(',') | map('trim') | select('length') | list
       register: serveractive_updated
 
     - name: Display updated configuration
