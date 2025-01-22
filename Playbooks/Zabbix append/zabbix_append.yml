@@ -7,23 +7,29 @@
     new_server_ip: "10.51.200.123"  # Replace with the new server IP
 
   tasks:
+    - name: Read current Server line
+      ansible.windows.win_shell: |
+        Get-Content "{{ zabbix_conf_path }}" | Select-String "^Server\s*=" | ForEach-Object { $_.Line }
+      register: current_server_line
+
+    - name: Read current ServerActive line
+      ansible.windows.win_shell: |
+        Get-Content "{{ zabbix_conf_path }}" | Select-String "^ServerActive\s*=" | ForEach-Object { $_.Line }
+      register: current_serveractive_line
+
     - name: Append new IP to Server line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
-        regexp: '^Server='
-        line: "Server={{ item }},{{ new_server_ip }}"
+        regexp: '^Server\s*='
+        line: "{{ current_server_line.stdout_lines[0] }},{{ new_server_ip }}"
         backrefs: yes
-      with_items:
-        - "{{ lookup('file', zabbix_conf_path) | regex_search('^Server=(.*)$', '\\1') | first }}"
 
     - name: Append new IP to ServerActive line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
-        regexp: '^ServerActive='
-        line: "ServerActive={{ item }},{{ new_server_ip }}"
+        regexp: '^ServerActive\s*='
+        line: "{{ current_serveractive_line.stdout_lines[0] }},{{ new_server_ip }}"
         backrefs: yes
-      with_items:
-        - "{{ lookup('file', zabbix_conf_path) | regex_search('^ServerActive=(.*)$', '\\1') | first }}"
 
     - name: Display updated configuration
       ansible.windows.win_shell: Get-Content "{{ zabbix_conf_path }}" | Select-String "^Server=|^ServerActive="
