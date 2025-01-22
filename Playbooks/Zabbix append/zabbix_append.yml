@@ -28,14 +28,14 @@
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
         regexp: '^Server\s*='
-        line: "Server={{ current_server_ips.stdout.strip() }}, {{ new_server_ip }}"
+        line: "Server={{ current_server_ips.stdout.strip() }},{{ new_server_ip }}"
       when: config_file.stat.exists and current_server_ips.stdout and new_server_ip not in current_server_ips.stdout
 
     - name: Append new IP to ServerActive line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
         regexp: '^ServerActive\s*='
-        line: "ServerActive={{ current_serveractive_ips.stdout.strip() }}, {{ new_server_ip }}"
+        line: "ServerActive={{ current_serveractive_ips.stdout.strip() }},{{ new_server_ip }}"
       when: config_file.stat.exists and current_serveractive_ips.stdout and new_server_ip not in current_serveractive_ips.stdout
 
     - name: Display updated configuration
