@@ -3,38 +3,54 @@
   hosts: all
   gather_facts: no
   vars:
-    zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf"  # Replace with the actual path
-    new_server_ip: "10.51.200.123"  # Replace with the new server IP
+    zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf" # Replace with the actual path
+    new_server_ip: "10.51.200.123" # Replace with the new server IP
 
   tasks:
+    - name: Check if Zabbix config file exists
+      ansible.windows.win_stat:
+        path: "{{ zabbix_conf_path }}"
+      register: config_file
+
     - name: Read current Server line
       ansible.windows.win_shell: |
         Get-Content "{{ zabbix_conf_path }}" | Select-String "^Server\s*=" | ForEach-Object { $_.Line }
       register: current_server_line
+      when: config_file.stat.exists
 
     - name: Read current ServerActive line
       ansible.windows.win_shell: |
         Get-Content "{{ zabbix_conf_path }}" | Select-String "^ServerActive\s*=" | ForEach-Object { $_.Line }
       register: current_serveractive_line
+      when: config_file.stat.exists
 
     - name: Append new IP to Server line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
         regexp: '^Server\s*='
-        line: "{{ current_server_line.stdout_lines[0] }},{{ new_server_ip }}"
+        line: "Server={{ current_server_line.stdout_lines[0].split('=')[1].strip() }},{{ new_server_ip }}"
         backrefs: yes
+      when: config_file.stat.exists and current_server_line.stdout_lines
 
     - name: Append new IP to ServerActive line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
         regexp: '^ServerActive\s*='
-        line: "{{ current_serveractive_line.stdout_lines[0] }},{{ new_server_ip }}"
+        line: "ServerActive={{ current_serveractive_line.stdout_lines[0].split('=')[1].strip() }},{{ new_server_ip }}"
         backrefs: yes
+      when: config_file.stat.exists and current_serveractive_line.stdout_lines
 
     - name: Display updated configuration
       ansible.windows.win_shell: Get-Content "{{ zabbix_conf_path }}" | Select-String "^Server=|^ServerActive="
       register: updated_config
+      when: config_file.stat.exists
 
     - name: Show updated configuration
       ansible.builtin.debug:
         msg: "{{ updated_config.stdout_lines }}"
+      when: config_file.stat.exists
+
+    - name: Show error if config file doesn't exist
+      ansible.builtin.debug:
+        msg: "Zabbix configuration file not found at {{ zabbix_conf_path }}"
+      when: not config_file.stat.exists
