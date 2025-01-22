@@ -18,12 +18,12 @@
 
     - name: Check for Server line
       ansible.builtin.set_fact:
-        server_line_exists: "{{ config_content.stdout | regex_search('^Server=') }}"
+        server_line_exists: "{{ true if config_content.stdout | regex_search('^Server=') else false }}"
       when: config_file.stat.exists
 
     - name: Check for ServerActive line
       ansible.builtin.set_fact:
-        server_active_line_exists: "{{ config_content.stdout | regex_search('^ServerActive=') }}"
+        server_active_line_exists: "{{ true if config_content.stdout | regex_search('^ServerActive=') else false }}"
       when: config_file.stat.exists
 
     - name: Display results
