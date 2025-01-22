@@ -13,13 +13,21 @@
       # - ServicePacks
       # - Tools
       # - Connectors
+    log_file: C:\available_updates.txt
   tasks:
-    - name: Search for specified updates, log to C:\available_updates.txt
+    - name: Search for specified updates
       ansible.windows.win_updates:
         category_names: "{{ update_categories }}"
         state: searched
-        log_path: C:\available_updates.txt
       register: update_result
+
+    - name: Write update search result to file
+      ansible.windows.win_shell: |
+        $updates = @'
+        {{ update_result.updates | to_json }}
+        '@
+        $updates | ConvertFrom-Json | ConvertTo-Json -Depth 5 | Out-File -FilePath {{ log_file }}
+      when: update_result.updates | length > 0
 
     - name: Display the update search result
       debug:
@@ -27,7 +35,7 @@
 
     - name: Check if updates were found and display message
       ansible.builtin.debug:
-        msg: "Updates were found and logged to C:\\available_updates.txt"
+        msg: "Updates were found and logged to {{ log_file }}"
       when: update_result.updates | length > 0
 
     - name: Log when no updates are found
