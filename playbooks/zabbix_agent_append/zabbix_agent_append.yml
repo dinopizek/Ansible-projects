@@ -4,7 +4,7 @@
   gather_facts: no
   vars:
     zabbix_conf_path: "C:\\Zabbix\\conf\\zabbix_agentd.win.conf" # Replace with the actual path
-    new_server_ip: "10.51.200.123"  # Replace with the new server IP
+    new_server_ip: "10.51.200.122"  # Replace with the new server IP
     zabbix_service_name: "Zabbix Agent"  # Replace with the actual service name if different
 
   tasks:
@@ -40,16 +40,16 @@
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
         regexp: '^Server\s*='
-        line: "Server={{ current_server_ips.stdout.strip() }},{{ new_server_ip }}"
-      when: config_file.stat.exists and current_server_ips.stdout and new_server_ip not in current_server_ips.stdout.split(',') | map('trim') | select('length') | list
+        line: "Server={{ (current_server_ips.stdout.split(',') | map('trim') | list + [new_server_ip]) | unique | join(',') }}"
+      when: config_file.stat.exists and current_server_ips.stdout
       register: server_updated
 
     - name: Append new IP to ServerActive line
       community.windows.win_lineinfile:
         path: "{{ zabbix_conf_path }}"
         regexp: '^ServerActive\s*='
-        line: "ServerActive={{ current_serveractive_ips.stdout.strip() }},{{ new_server_ip }}"
-      when: config_file.stat.exists and current_serveractive_ips.stdout and new_server_ip not in current_serveractive_ips.stdout.split(',') | map('trim') | select('length') | list
+        line: "ServerActive={{ (current_serveractive_ips.stdout.split(',') | map('trim') | list + [new_server_ip]) | unique | join(',') }}"
+      when: config_file.stat.exists and current_serveractive_ips.stdout
       register: serveractive_updated
 
     - name: Display updated configuration
