@@ -1,0 +1,36 @@
+---
+- name: Install all Windows updates for selected categories
+  hosts: windows
+  gather_facts: yes
+  vars:
+    update_categories:
+      - SecurityUpdates
+      - CriticalUpdates
+      - UpdateRollups
+      # Uncomment additional categories as needed:
+      # - DefinitionUpdates
+      # - Updates
+      # - FeaturePacks
+      # - ServicePacks
+      # - Tools
+      # - Connectors
+  tasks:
+    - name: Install all updates for selected categories
+      ansible.windows.win_updates:
+        category_names: "{{ update_categories }}"
+        state: installed
+      register: update_install_result
+
+    - name: Display installed updates
+      debug:
+        var: update_install_result.updates
+
+    - name: Check if updates were installed and display message
+      ansible.builtin.debug:
+        msg: "Updates were installed successfully."
+      when: update_install_result.updates | length > 0
+
+    - name: Log if no updates were installed
+      ansible.builtin.debug:
+        msg: "No updates were installed."
+      when: update_install_result.updates | length == 0
